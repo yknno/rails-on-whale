@@ -1,0 +1,39 @@
+ARG RUBY_VERSION=4.0.2
+ARG DISTRO_NAME=bookworm
+
+FROM ruby:${RUBY_VERSION}-slim-${DISTRO_NAME}
+
+RUN apt-get update -qq \
+  && DEBIAN_FRONTEND=noninteractive apt-get install -yq --no-install-recommends \
+    build-essential \
+    curl \
+    git \
+    default-libmysqlclient-dev \
+    default-mysql-client \
+    libyaml-dev \
+    pkg-config \
+    less \
+    vim \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+ARG USER_NAME=dev
+ARG USER_UID=1000
+ARG USER_GID=1000
+
+RUN groupadd --gid "${USER_GID}" "${USER_NAME}" \
+  && useradd --uid "${USER_UID}" --gid "${USER_GID}" --create-home --shell /bin/bash "${USER_NAME}"
+
+ENV LANG=C.UTF-8 \
+    BUNDLE_JOBS=4 \
+    BUNDLE_RETRY=3 \
+    BUNDLE_PATH=/usr/local/bundle \
+    EDITOR=vim
+
+RUN mkdir -p /usr/local/bundle /usr/local/hist /app \
+  && chown -R ${USER_UID}:${USER_GID} /usr/local/bundle /usr/local/hist /app
+
+RUN gem update --system --no-document && gem install --no-document bundler
+
+USER ${USER_NAME}
+WORKDIR /app

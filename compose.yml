@@ -1,0 +1,73 @@
+x-app: &app
+  build:
+    dockerfile: Dockerfile.dev
+    context: .
+    args:
+      RUBY_VERSION: '4.0.2'
+      DISTRO_NAME: bookworm
+      USER_UID: ${HOST_UID:-1000}
+      USER_GID: ${HOST_GID:-1000}
+  image: dockered_dev-dev:1.0.0
+  tmpfs:
+    - /tmp
+
+x-backend: &backend
+  <<: *app
+  stdin_open: true
+  tty: true
+  volumes:
+    - .:/app:cached
+    - bundle:/usr/local/bundle
+    - rails_cache:/app/tmp/cache
+    - history:/usr/local/hist
+  environment:
+    RAILS_ENV: ${RAILS_ENV:-development}
+    NODE_ENV: ${NODE_ENV:-development}
+    HISTFILE: /usr/local/hist/.bash_history
+    BUNDLE_PATH: /usr/local/bundle
+    BOOTSNAP_CACHE_DIR: /usr/local/bundle/_bootsnap
+    DB_HOST: db
+
+services:
+  app:
+    <<: *backend
+    command: bin/rails server -b 0.0.0.0
+    ports:
+      - '3000:3000'
+    depends_on:
+      db:
+        condition: service_healthy
+      setup:
+        condition: service_completed_successfully
+
+  setup:
+    <<: *backend
+    command: bin/setup --skip-server
+    depends_on:
+      db:
+        condition: service_healthy
+
+  runner:
+    <<: *backend
+    command: sleep infinity
+    profiles: ['tools']
+
+  db:
+    image: mysql:8.0
+    volumes:
+      - mysql_data:/var/lib/mysql
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'true'
+    ports:
+      - '3306:3306'
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1', '-u', 'root']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  bundle:
+  mysql_data:
+  rails_cache:
+  history:

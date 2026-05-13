@@ -1,0 +1,12 @@
+.git
+.gitignore
+.dockerignore
+log/*
+tmp/*
+!tmp/.keep
+!log/.keep
+.bundle
+vendor/bundle
+node_modules
+.env
+.env.*
