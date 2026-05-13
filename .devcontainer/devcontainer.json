@@ -1,17 +1,24 @@
 {
   "name": "dockered_dev",
+  // プロジェクトルートにある compose.yml をそのまま活用
   "dockerComposeFile": "../compose.yml",
+  // VSCodeがアタッチするコンテナを指定 (profiles: tools に属する常駐コンテナ)
   "service": "runner",
+  // devcontainer起動時に、このサービスを立ち上げる
   "runServices": ["runner"],
+  // コンテナ内での作業ディレクトリ
   "workspaceFolder": "/app",
+  // Dockerfileで作成した一般ユーザーで接続 (rootを避ける)
   "remoteUser": "dev",
+  // VSCodeを閉じたらComposeも停止
   "shutdownAction": "stopCompose",
   "customizations": {
     "vscode": {
+      // 開発を効率化する必須拡張機能
       "extensions": [
-        "Shopify.ruby-lsp",
-        "KoichiSasada.vscode-rdbg",
-        "EditorConfig.EditorConfig"
+        "Shopify.ruby-lsp",      // 言語解析
+        "KoichiSasada.vscode-rdbg", // デバッガ
+        "EditorConfig.EditorConfig" // インデント等の共有
       ]
     }
   }

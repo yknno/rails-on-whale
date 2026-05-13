@@ -1,8 +1,14 @@
+# --- 1. ビルド時引数の定義 ---
+# 後で変更しやすいよう、バージョンやベースOSを共通変数化
 ARG RUBY_VERSION=4.0.2
 ARG DISTRO_NAME=bookworm
 
+# --- 2. ベースイメージの選択 ---
+# 軽量な -slim イメージを採用し、ビルド時間とサイズを節約
 FROM ruby:${RUBY_VERSION}-slim-${DISTRO_NAME}
 
+# --- 3. OSパッケージのインストール ---
+# Railsの動作に必要な最小限のライブラリと、開発を便利にするツール(vim/less)を導入
 RUN apt-get update -qq \
   && DEBIAN_FRONTEND=noninteractive apt-get install -yq --no-install-recommends \
     build-essential \
@@ -17,6 +23,8 @@ RUN apt-get update -qq \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+# --- 4. ホストとユーザーIDを一致させる ---
+# ファイル所有権のトラブルを防ぐため、ホスト側のUID/GIDをビルド時に注入可能にする
 ARG USER_NAME=dev
 ARG USER_UID=1000
 ARG USER_GID=1000
@@ -24,16 +32,24 @@ ARG USER_GID=1000
 RUN groupadd --gid "${USER_GID}" "${USER_NAME}" \
   && useradd --uid "${USER_UID}" --gid "${USER_GID}" --create-home --shell /bin/bash "${USER_NAME}"
 
+# --- 5. 環境変数の設定 ---
+# BUNDLE_PATHを固定し、ボリュームマウントでGemを永続化できるようにする
 ENV LANG=C.UTF-8 \
     BUNDLE_JOBS=4 \
     BUNDLE_RETRY=3 \
     BUNDLE_PATH=/usr/local/bundle \
     EDITOR=vim
 
+# --- 6. 永続化用ディレクトリの準備 ---
+# bundle: Gem用 / hist: bash_history用 / app: アプリコード用
 RUN mkdir -p /usr/local/bundle /usr/local/hist /app \
   && chown -R ${USER_UID}:${USER_GID} /usr/local/bundle /usr/local/hist /app
 
+# --- 7. Rubyエコシステムの初期化 ---
+# RubyGems (gem コマンド本体) を最新化し、Bundler を導入
 RUN gem update --system --no-document && gem install --no-document bundler
 
+# --- 8. 実行ユーザーとディレクトリの確定 ---
+# rootでの作業を避け、作成した一般ユーザーに切り替える
 USER ${USER_NAME}
 WORKDIR /app
