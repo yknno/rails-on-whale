@@ -22,3 +22,8 @@
 !/tmp/pids/.keep
 
 /public/assets
+
+# Ignore master key for decrypting credentials and transitions.
+/config/master.key
+/config/credentials/*.key
+
