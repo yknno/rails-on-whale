@@ -12,9 +12,13 @@ x-app: &app
       USER_UID: ${HOST_UID:-1000}
       USER_GID: ${HOST_GID:-1000}
   image: dockered_dev-dev:1.0.0
-  # OS の /tmp をメモリ上に置く (gem ビルドの中間ファイル等が速くなる。Rails の tmp は /app/tmp 側)
+  # メモリ上に置く一時領域:
+  # /tmp           : OS 一時ファイル (gem ビルドの中間ファイル等)
+  # /app/tmp/pids  : puma の server.pid を揮発化 (kill -9 後のゾンビ pid 問題を回避)
+  #                  mode=1777 で dev ユーザーが書けるように
   tmpfs:
     - /tmp
+    - /app/tmp/pids:mode=1777
 
 # Railsを動かすコンテナ共通の実行設定
 x-backend: &backend
